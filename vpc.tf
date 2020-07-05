@@ -1,11 +1,12 @@
 # vpc
 
 resource "aws_vpc" "this" {
-  count = var.vpc_id == "" ? 1 : 0
+  count = var.create_vpc ? 1 : 0
 
   cidr_block = var.vpc_cidr
 
-  enable_dns_hostnames = true
+  enable_dns_hostnames = var.enable_dns_hostnames
+  enable_dns_support   = var.enable_dns_support
 
   tags = merge(
     {
@@ -15,14 +16,11 @@ resource "aws_vpc" "this" {
   )
 }
 
-data "aws_vpc" "this" {
-  id = var.vpc_id == "" ? element(concat(aws_vpc.this.*.id, [""]), 0) : var.vpc_id
-}
 
 resource "aws_internet_gateway" "this" {
-  # count = var.vpc_id == "" ? 1 : 0
+  count = var.create_vpc && length(var.public_subnets) > 0 ? 1 : 0
 
-  vpc_id = element(concat(aws_vpc.this.*.id, [""]), 0)
+  vpc_id = local.vpc_id
 
   tags = merge(
     {
@@ -32,9 +30,3 @@ resource "aws_internet_gateway" "this" {
   )
 }
 
-# data "aws_internet_gateway" "this" {
-#   filter {
-#     name   = "attachment.vpc-id"
-#     values = [var.vpc_id == "" ? element(concat(aws_vpc.this.*.id, [""]), 0) : var.vpc_id]
-#   }
-# }
